@@ -241,7 +241,7 @@
                 Zero upfront commitment.
             </p>
             <p class="subtext">
-                Asymmetric upside. We take a profit only when you take a profit.
+                We take a profit when you take a profit.
             </p>
         </div>
 
@@ -1044,7 +1044,14 @@
             OptimalTransport
         ];
 
-        const INITIAL_ENGINES = [PhaseSpaceAttractor, TopologyRevealer, ThreeBodySystem];
+        // Included MonteCarloSim in the initial random array below
+        const INITIAL_ENGINES = [
+            PhaseSpaceAttractor, 
+            TopologyRevealer, 
+            ThreeBodySystem, 
+            MonteCarloSim
+        ];
+        
         const InitialClass = INITIAL_ENGINES[Math.floor(Math.random() * INITIAL_ENGINES.length)];
         
         currentEngineIndex = ALL_ENGINES.indexOf(InitialClass);
