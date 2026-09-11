@@ -58,12 +58,76 @@
             align-items: center;
         }
 
-        .header span {
+        /* Hover Infinity Graphic Transformation */
+        .brand {
+            position: relative;
+            display: inline-block;
+            pointer-events: auto;
+            cursor: pointer;
+            padding: 0 20px;
+            margin-left: -20px;
+        }
+
+        .brand-text {
+            display: block;
             font-size: 1.5rem;
             font-weight: 300;
             letter-spacing: 0.35em;
             color: #E2DDD5;
             text-transform: uppercase;
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .brand-infinity {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .brand-infinity svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .brand-infinity .infinity-track {
+            stroke: rgba(226, 221, 213, 0.25);
+            stroke-width: 1.5;
+        }
+
+        .brand-infinity .infinity-pulse {
+            stroke: #C87D53;
+            stroke-width: 2;
+            stroke-dasharray: 35 65;
+            stroke-dashoffset: 0;
+            animation: infinityFlow 2.4s linear infinite;
+        }
+
+        @keyframes infinityFlow {
+            0% {
+                stroke-dashoffset: 100;
+            }
+            100% {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .brand:hover .brand-text {
+            opacity: 0;
+            transform: scale(0.92);
+        }
+
+        .brand:hover .brand-infinity {
+            opacity: 1;
+            transform: scale(1);
         }
 
         .hero-text {
@@ -102,9 +166,17 @@
 
         .engine-display {
             color: #5C554E;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: color 3s ease;
+            display: inline-block;
         }
 
-        /* Hover Glow Effect */
+        .engine-display:hover {
+            color: #221E1B;
+            transition: color 0.1s ease;
+        }
+
         .footer-text {
             color: #5C554E;
             pointer-events: auto;
@@ -122,6 +194,13 @@
             .content { padding: 30px; }
             .hero-text p.tagline { font-size: 1.05rem; }
             .hero-text p.subtext { font-size: 0.80rem; }
+
+            .engine-display {
+                display: none;
+            }
+            .footer {
+                justify-content: flex-start;
+            }
         }
     </style>
 </head>
@@ -133,19 +212,36 @@
 
     <div class="content">
         <div class="header">
-            <span>EX ANTE</span>
+            <div class="brand">
+                <span class="brand-text">EX ANTE</span>
+                <div class="brand-infinity">
+                    <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                        <path class="infinity-track" 
+                              d="M 50,20 C 35,5 15,5 15,20 C 15,35 35,35 50,20 C 65,5 85,5 85,20 C 85,35 65,35 50,20 Z" 
+                              fill="none" 
+                              stroke-linecap="round" 
+                              stroke-linejoin="round" />
+                        <path class="infinity-pulse" 
+                              pathLength="100"
+                              d="M 50,20 C 35,5 15,5 15,20 C 15,35 35,35 50,20 C 65,5 85,5 85,20 C 85,35 65,35 50,20 Z" 
+                              fill="none" 
+                              stroke-linecap="round" 
+                              stroke-linejoin="round" />
+                    </svg>
+                </div>
+            </div>
         </div>
 
         <div class="hero-text">
             <p class="tagline">The profit is already in the system.</p>
             <p class="subtext">
-                We model the machine. Unused yield becomes visible. Forecasting in ways you have never seen. Volume, complexity, uncertainty? Finance, oil & gas, investment strategy, production, logistics, construction — any system can have hidden yields.
+                We model the machine. Unused yield becomes visible. Stress-testing non-linear systems before capital is deployed. Where volume, structural complexity, and uncertainty exist, opportunity hides.
             </p>
             <p class="subtext">
-                No spend.
+                Zero upfront commitment.
             </p>
             <p class="subtext">
-                Toss a coin, win but not lose: We take a profit when you take a profit.
+                Asymmetric upside. We take a profit only when you take a profit.
             </p>
         </div>
 
@@ -160,8 +256,8 @@
         const ctx = canvas.getContext('2d');
 
         let width, height;
-        let isUserActive = false;
-        let idleTimer = null;
+        let activeEngine = null;
+        let currentEngineIndex = 0;
         
         let mouse = { 
             x: -1000, 
@@ -175,39 +271,15 @@
         };
 
         function resize() {
+            const oldWidth = width;
+            const oldHeight = height;
+
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
 
-        window.addEventListener('mousemove', (e) => {
-            isUserActive = true;
-            mouse.targetX = e.clientX;
-            mouse.targetY = e.clientY;
-
-            clearTimeout(idleTimer);
-            // Return to autonomous scanning for Feigenbaum Explorer after mouse stops
-            idleTimer = setTimeout(() => {
-                isUserActive = false;
-            }, 2500);
-        });
-
-        function updateMouse() {
-            // Apply autonomous simulated motion ONLY if active engine is Feigenbaum Explorer
-            if (activeEngine instanceof FeigenbaumExplorer && !isUserActive) {
-                const time = Date.now() * 0.0006;
-                mouse.targetX = (Math.sin(time) * 0.42 + 0.5) * width;
-                mouse.targetY = (Math.cos(time * 0.7) * 0.25 + 0.5) * height;
+            if (activeEngine && typeof activeEngine.onResize === 'function') {
+                activeEngine.onResize(oldWidth, oldHeight, width, height);
             }
-
-            mouse.vx = (mouse.targetX - mouse.lastX);
-            mouse.vy = (mouse.targetY - mouse.lastY);
-            mouse.lastX = mouse.targetX;
-            mouse.lastY = mouse.targetY;
-
-            mouse.x += (mouse.targetX - mouse.x) * 0.08;
-            mouse.y += (mouse.targetY - mouse.y) * 0.08;
         }
 
         /* -------------------------------------------------------------
@@ -217,8 +289,8 @@
             constructor() {
                 this.name = "ENGINE // TOPOLOGY_REVEALER";
                 this.nodes = [];
-                this.numBase = 70;
-                this.numLatent = 200;
+                this.numBase = 68;
+                this.numLatent = 157;
                 this.init();
             }
 
@@ -228,10 +300,10 @@
                     this.nodes.push({
                         x: Math.random() * width,
                         y: Math.random() * height,
-                        vx: (Math.random() - 0.5) * 0.4,
-                        vy: (Math.random() - 0.5) * 0.4,
+                        vx: (Math.random() - 0.5) * 0.55,
+                        vy: (Math.random() - 0.5) * 0.55,
                         isLatent: false,
-                        alpha: 0.4,
+                        alpha: 0.45,
                         radius: 3
                     });
                 }
@@ -239,8 +311,8 @@
                     this.nodes.push({
                         x: Math.random() * width,
                         y: Math.random() * height,
-                        vx: (Math.random() - 0.5) * 0.2,
-                        vy: (Math.random() - 0.5) * 0.2,
+                        vx: (Math.random() - 0.5) * 0.375,
+                        vy: (Math.random() - 0.5) * 0.375,
                         isLatent: true,
                         alpha: 0,
                         radius: 2
@@ -248,13 +320,27 @@
                 }
             }
 
+            onResize(oldWidth, oldHeight, newWidth, newHeight) {
+                if (!oldWidth || !oldHeight) return;
+                const scaleX = newWidth / oldWidth;
+                const scaleY = newHeight / oldHeight;
+
+                this.nodes.forEach(node => {
+                    node.x *= scaleX;
+                    node.y *= scaleY;
+                });
+            }
+
             render() {
                 ctx.fillStyle = '#111111';
                 ctx.fillRect(0, 0, width, height);
 
                 const revealRadius = 480;
+                const revealRadiusSq = revealRadius * revealRadius;
+                const len = this.nodes.length;
 
-                this.nodes.forEach(node => {
+                for (let i = 0; i < len; i++) {
+                    const node = this.nodes[i];
                     node.x += node.vx;
                     node.y += node.vy;
 
@@ -264,51 +350,65 @@
                     if (node.isLatent) {
                         const dx = mouse.x - node.x;
                         const dy = mouse.y - node.y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        const distSq = dx * dx + dy * dy;
 
-                        if (dist < revealRadius) {
+                        if (distSq < revealRadiusSq) {
+                            const dist = Math.sqrt(distSq);
                             const targetAlpha = Math.pow(1 - dist / revealRadius, 2);
-                            node.alpha += (targetAlpha - node.alpha) * 0.1;
+                            node.alpha += (targetAlpha - node.alpha) * 0.075;
+                        } else if (node.alpha > 0.001) {
+                            node.alpha += (0 - node.alpha) * 0.02;
                         } else {
-                            node.alpha += (0 - node.alpha) * 0.05;
-                        }
-                    }
-                });
-
-                for (let i = 0; i < this.nodes.length; i++) {
-                    for (let j = i + 1; j < this.nodes.length; j++) {
-                        const n1 = this.nodes[i];
-                        const n2 = this.nodes[j];
-
-                        if (n1.isLatent && n1.alpha < 0.02 && n2.isLatent && n2.alpha < 0.02) continue;
-
-                        const dx = n1.x - n2.x;
-                        const dy = n1.y - n2.y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        const maxDist = (n1.isLatent || n2.isLatent) ? 220 : 320;
-
-                        if (dist < maxDist) {
-                            const edgeAlpha = (1 - dist / maxDist) * Math.min(n1.alpha, n2.alpha);
-                            ctx.beginPath();
-                            ctx.moveTo(n1.x, n1.y);
-                            ctx.lineTo(n2.x, n2.y);
-
-                            if (n1.isLatent || n2.isLatent) {
-                                ctx.strokeStyle = `rgba(200, 125, 83, ${edgeAlpha * 0.85})`;
-                                ctx.setLineDash([2, 4]);
-                            } else {
-                                ctx.strokeStyle = `rgba(138, 130, 122, ${edgeAlpha * 0.35})`;
-                                ctx.setLineDash([]);
-                            }
-                            ctx.lineWidth = 1;
-                            ctx.stroke();
-                            ctx.setLineDash([]);
+                            node.alpha = 0;
                         }
                     }
                 }
 
-                this.nodes.forEach(node => {
-                    if (node.alpha < 0.01) return;
+                ctx.lineWidth = 1;
+
+                for (let i = 0; i < len; i++) {
+                    const n1 = this.nodes[i];
+                    const a1 = n1.alpha;
+                    if (a1 < 0.01) continue;
+
+                    for (let j = i + 1; j < len; j++) {
+                        const n2 = this.nodes[j];
+                        const a2 = n2.alpha;
+                        if (a2 < 0.01) continue;
+
+                        const dx = n1.x - n2.x;
+                        const dy = n1.y - n2.y;
+                        const distSq = dx * dx + dy * dy;
+                        const isLatent = n1.isLatent || n2.isLatent;
+                        const maxDist = isLatent ? 200 : 280;
+                        const maxDistSq = maxDist * maxDist;
+
+                        if (distSq < maxDistSq) {
+                            const dist = Math.sqrt(distSq);
+                            const minAlpha = a1 < a2 ? a1 : a2;
+                            const edgeAlpha = (1 - dist / maxDist) * minAlpha;
+
+                            ctx.beginPath();
+                            ctx.moveTo(n1.x, n1.y);
+                            ctx.lineTo(n2.x, n2.y);
+
+                            if (isLatent) {
+                                ctx.strokeStyle = `rgba(200, 125, 83, ${edgeAlpha * 0.85})`;
+                                ctx.setLineDash([2, 4]);
+                                ctx.stroke();
+                                ctx.setLineDash([]);
+                            } else {
+                                ctx.strokeStyle = `rgba(138, 130, 122, ${edgeAlpha * 0.35})`;
+                                ctx.stroke();
+                            }
+                        }
+                    }
+                }
+
+                for (let i = 0; i < len; i++) {
+                    const node = this.nodes[i];
+                    if (node.alpha < 0.01) continue;
+
                     ctx.beginPath();
                     ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
                     if (node.isLatent) {
@@ -317,16 +417,155 @@
                         ctx.fillStyle = `rgba(226, 221, 213, ${node.alpha})`;
                     }
                     ctx.fill();
-                });
+                }
             }
         }
 
         /* -------------------------------------------------------------
-           ENGINE 2: PHASE SPACE ATTRACTOR
+           ENGINE 2: MONTE CARLO SIM
+        ------------------------------------------------------------- */
+        class MonteCarloSim {
+            constructor() {
+                this.name = "ENGINE // MONTE_CARLO_SIM";
+                this.numPaths = 75;
+                this.steps = 130;
+                this.paths = [];
+                this.init();
+            }
+
+            init() {
+                this.resetAllPaths();
+            }
+
+            onResize() {
+                this.resetAllPaths();
+            }
+
+            resetAllPaths() {
+                this.paths = [];
+                for (let i = 0; i < this.numPaths; i++) {
+                    this.paths.push(this.createPath(i));
+                }
+            }
+
+            createPath(index) {
+                const startX = width * 0.92;
+                const startY = height * 0.52;
+                const plotWidth = width * 0.84;
+
+                const progress = 0;
+                const speed = (0.35 + Math.random() * 0.65) * 0.125; 
+
+                const volatility = (3.6 + Math.random() * 4.2) * 2.0;
+                const drift = ((Math.random() - 0.48) * 0.38) * 2.0;
+
+                const points = [{ x: startX, y: startY }];
+                let currentY = startY;
+
+                for (let s = 1; s <= this.steps; s++) {
+                    const x = startX - (s / this.steps) * plotWidth;
+                    const shock = (Math.random() + Math.random() + Math.random() - 1.5) * volatility;
+                    currentY += drift + shock;
+                    points.push({ x, y: currentY });
+                }
+
+                const isCopper = index % 5 === 0;
+                return {
+                    points: points,
+                    progress: progress,
+                    speed: speed,
+                    color: isCopper ? '#C87D53' : (index % 2 === 0 ? '#E2DDD5' : '#8A827A'),
+                    alpha: isCopper ? 0.45 : 0.22,
+                    isCopper: isCopper,
+                    maxSteps: this.steps
+                };
+            }
+
+            render() {
+                ctx.fillStyle = '#111111';
+                ctx.fillRect(0, 0, width, height);
+
+                const startX = width * 0.92;
+                const startY = height * 0.52;
+                const endX = width * 0.08;
+
+                // Center dashed guideline
+                ctx.setLineDash([3, 4]);
+                ctx.strokeStyle = 'rgba(200, 125, 83, 0.25)';
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, startY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                const mouseBiasY = (mouse.y > 0) ? (mouse.y - startY) * 0.0003 : 0;
+
+                for (let i = 0; i < this.paths.length; i++) {
+                    const path = this.paths[i];
+
+                    path.progress += path.speed;
+
+                    if (path.progress >= path.maxSteps) {
+                        this.paths[i] = this.createPath(i);
+                        continue;
+                    }
+
+                    const activeIndex = Math.floor(path.progress);
+                    if (activeIndex < 1) continue;
+
+                    ctx.beginPath();
+                    ctx.moveTo(path.points[0].x, path.points[0].y);
+
+                    for (let p = 1; p <= activeIndex; p++) {
+                        const pt = path.points[p];
+                        const mouseInfluence = (p / path.maxSteps) * mouseBiasY * p;
+                        ctx.lineTo(pt.x, pt.y + mouseInfluence);
+                    }
+
+                    const p1 = path.points[activeIndex];
+                    const p2 = path.points[Math.min(activeIndex + 1, path.maxSteps)];
+                    const remainder = path.progress - activeIndex;
+                    const headX = p1.x + (p2.x - p1.x) * remainder;
+                    const headY = p1.y + (p2.y - p1.y) * remainder + (activeIndex / path.maxSteps) * mouseBiasY * activeIndex;
+
+                    ctx.lineTo(headX, headY);
+
+                    ctx.strokeStyle = path.color;
+                    ctx.globalAlpha = path.alpha;
+                    ctx.lineWidth = path.isCopper ? 1.2 : 1.0;
+                    ctx.stroke();
+
+                    ctx.globalAlpha = Math.min(1.0, path.alpha * 2.2);
+                    ctx.fillStyle = path.color;
+                    ctx.beginPath();
+                    ctx.arc(headX, headY, path.isCopper ? 2.2 : 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.globalAlpha = 1.0;
+                }
+
+                ctx.beginPath();
+                ctx.arc(startX, startY, 3.5, 0, Math.PI * 2);
+                ctx.fillStyle = '#C87D53';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(startX, startY, 9, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(200, 125, 83, 0.18)';
+                ctx.fill();
+            }
+        }
+
+        /* -------------------------------------------------------------
+           ENGINE 3: PHASE SPACE ATTRACTOR
         ------------------------------------------------------------- */
         class PhaseSpaceAttractor {
             constructor() {
                 this.name = "ENGINE // PHASE_SPACE_ATTRACTOR";
+                this.init();
+            }
+
+            init() {
                 this.a = -1.4;
                 this.b = 1.6;
                 this.c = 1.0;
@@ -335,10 +574,19 @@
                 this.targetA = this.a;
                 this.targetB = this.b;
                 this.points = 18000;
+
+                if (ctx && typeof width !== 'undefined' && typeof height !== 'undefined') {
+                    ctx.fillStyle = '#111111';
+                    ctx.fillRect(0, 0, width, height);
+                }
+            }
+
+            onResize() {
+                ctx.fillStyle = '#111111';
+                ctx.fillRect(0, 0, width, height);
             }
 
             render() {
-                // Dynamically adjust trail fade and particle opacity based on screen width
                 const isNarrow = width <= 768;
                 const clearAlpha = isNarrow ? 0.35 : 0.25;
                 const pointOpacity = isNarrow ? 0.07 : 0.18;
@@ -349,8 +597,8 @@
                 this.targetA = -1.4 + (mouse.x / width - 0.5) * 0.8;
                 this.targetB = 1.6 + (mouse.y / height - 0.5) * 0.8;
 
-                this.a += (this.targetA - this.a) * 0.03;
-                this.b += (this.targetB - this.b) * 0.03;
+                this.a += (this.targetA - this.a) * 0.015;
+                this.b += (this.targetB - this.b) * 0.015;
 
                 let x = 0.1;
                 let y = 0.1;
@@ -377,32 +625,170 @@
         }
 
         /* -------------------------------------------------------------
-           ENGINE 3: FEIGENBAUM EXPLORER
+           ENGINE 4: THREE BODY SYSTEM
+        ------------------------------------------------------------- */
+        class ThreeBodySystem {
+            constructor() {
+                this.name = "ENGINE // THREE_BODY_SYSTEM";
+                this.init();
+            }
+
+            init() {
+                this.G = 1300;
+                this.softening = 1800;
+                this.trailLength = 220;
+                
+                const cx = width / 2;
+                const cy = height / 2;
+                
+                this.bodies = [
+                    { x: cx - 130, y: cy - 30, vx: 0.9, vy: -1.3, mass: 110, trail: [], color: '#C87D53' },
+                    { x: cx + 130, y: cy + 30, vx: -0.9, vy: 1.3, mass: 110, trail: [], color: '#E2DDD5' },
+                    { x: cx, y: cy - 110, vx: 1.5, vy: 0.1, mass: 110, trail: [], color: '#8A827A' }
+                ];
+            }
+
+            onResize() {}
+
+            render() {
+                ctx.fillStyle = '#111111';
+                ctx.fillRect(0, 0, width, height);
+
+                const subSteps = 6;
+                const dt = 0.16 / subSteps;
+
+                for (let step = 0; step < subSteps; step++) {
+                    for (let i = 0; i < 3; i++) {
+                        let ax = 0;
+                        let ay = 0;
+                        for (let j = 0; j < 3; j++) {
+                            if (i === j) continue;
+                            const dx = this.bodies[j].x - this.bodies[i].x;
+                            const dy = this.bodies[j].y - this.bodies[i].y;
+                            const distSq = dx * dx + dy * dy + this.softening;
+                            const dist = Math.sqrt(distSq);
+                            const force = (this.G * this.bodies[j].mass) / (distSq * dist);
+                            ax += force * dx;
+                            ay += force * dy;
+                        }
+
+                        if (mouse.x > 0 && mouse.y > 0) {
+                            const mdx = mouse.x - this.bodies[i].x;
+                            const mdy = mouse.y - this.bodies[i].y;
+                            const mDistSq = mdx * mdx + mdy * mdy + 12000;
+                            const mForce = 900 / (mDistSq * Math.sqrt(mDistSq));
+                            ax += mForce * mdx;
+                            ay += mForce * mdy;
+                        }
+
+                        this.bodies[i].vx += ax * dt;
+                        this.bodies[i].vy += ay * dt;
+                    }
+
+                    for (let i = 0; i < 3; i++) {
+                        this.bodies[i].x += this.bodies[i].vx * dt;
+                        this.bodies[i].y += this.bodies[i].vy * dt;
+
+                        const cx = width / 2;
+                        const cy = height / 2;
+                        const distFromCenterSq = Math.pow(this.bodies[i].x - cx, 2) + Math.pow(this.bodies[i].y - cy, 2);
+                        const maxDist = Math.min(width, height) * 0.42;
+                        if (distFromCenterSq > maxDist * maxDist) {
+                            this.bodies[i].vx += (cx - this.bodies[i].x) * 0.0006;
+                            this.bodies[i].vy += (cy - this.bodies[i].y) * 0.0006;
+                        }
+                    }
+                }
+
+                for (let i = 0; i < 3; i++) {
+                    this.bodies[i].trail.push({ x: this.bodies[i].x, y: this.bodies[i].y });
+                    if (this.bodies[i].trail.length > this.trailLength) {
+                        this.bodies[i].trail.shift();
+                    }
+                }
+
+                ctx.beginPath();
+                ctx.moveTo(this.bodies[0].x, this.bodies[0].y);
+                ctx.lineTo(this.bodies[1].x, this.bodies[1].y);
+                ctx.lineTo(this.bodies[2].x, this.bodies[2].y);
+                ctx.closePath();
+                ctx.strokeStyle = 'rgba(200, 125, 83, 0.12)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                for (let i = 0; i < 3; i++) {
+                    const b = this.bodies[i];
+                    if (b.trail.length < 2) continue;
+
+                    for (let t = 1; t < b.trail.length; t++) {
+                        const alpha = (t / b.trail.length) * 0.55;
+                        ctx.beginPath();
+                        ctx.moveTo(b.trail[t - 1].x, b.trail[t - 1].y);
+                        ctx.lineTo(b.trail[t].x, b.trail[t].y);
+                        
+                        if (i === 0) ctx.strokeStyle = `rgba(200, 125, 83, ${alpha})`;
+                        else if (i === 1) ctx.strokeStyle = `rgba(226, 221, 213, ${alpha})`;
+                        else ctx.strokeStyle = `rgba(138, 130, 122, ${alpha})`;
+                        
+                        ctx.lineWidth = 1.2;
+                        ctx.stroke();
+                    }
+                }
+
+                for (let i = 0; i < 3; i++) {
+                    const b = this.bodies[i];
+                    ctx.beginPath();
+                    ctx.arc(b.x, b.y, 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = b.color;
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.arc(b.x, b.y, 9, 0, Math.PI * 2);
+                    if (i === 0) ctx.fillStyle = 'rgba(200, 125, 83, 0.18)';
+                    else if (i === 1) ctx.fillStyle = 'rgba(226, 221, 213, 0.18)';
+                    else ctx.fillStyle = 'rgba(138, 130, 122, 0.18)';
+                    ctx.fill();
+                }
+            }
+        }
+
+        /* -------------------------------------------------------------
+           ENGINE 5: FEIGENBAUM EXPLORER
         ------------------------------------------------------------- */
         class FeigenbaumExplorer {
             constructor() {
                 this.name = "ENGINE // FEIGENBAUM_EXPLORER";
                 this.warmup = 100;
                 this.iterations = 75;
+                
+                this.rStart = 2.9;
+                this.nonLinearShift = 1.0;
             }
+
+            onResize() {}
 
             render() {
                 ctx.fillStyle = '#111111';
                 ctx.fillRect(0, 0, width, height);
 
                 const marginX = width * 0.08;
-                // Positioned below text baseline
                 const marginTop = Math.max(height * 0.45, 340) + 50; 
                 const marginBottom = height * 0.10;
                 const plotWidth = width - marginX * 2;
                 const plotHeight = height - marginTop - marginBottom;
 
-                const rStart = 2.7 + (mouse.x / width) * 0.4;
+                const targetRStart = 2.7 + (mouse.x / width) * 0.4;
+                const targetShift = 1.0 + ((height / 2 - mouse.y) / height) * 0.15;
+
+                this.rStart += (targetRStart - this.rStart) * 0.04;
+                this.nonLinearShift += (targetShift - this.nonLinearShift) * 0.04;
+
+                const rStart = this.rStart;
                 const rEnd = 4.0;
-                const nonLinearShift = 1.0 + ((height / 2 - mouse.y) / height) * 0.15;
+                const nonLinearShift = this.nonLinearShift;
 
                 const slices = Math.floor(plotWidth / 2.2);
-                const diagonalAscent = 70; // Diagonal upward slant towards the right
+                const diagonalAscent = 70;
 
                 for (let s = 0; s < slices; s++) {
                     const stepFrac = s / slices;
@@ -439,14 +825,12 @@
                     }
                 }
 
-                // Diagonally sloped axis baseline
                 ctx.strokeStyle = 'rgba(138, 130, 122, 0.12)';
                 ctx.beginPath();
                 ctx.moveTo(marginX, marginTop + plotHeight);
                 ctx.lineTo(marginX + plotWidth, marginTop + plotHeight - diagonalAscent);
                 ctx.stroke();
 
-                // Interactive vertical inspection line
                 if (mouse.x > marginX && mouse.x < marginX + plotWidth) {
                     const currentOffset = ((mouse.x - marginX) / plotWidth) * diagonalAscent;
                     ctx.strokeStyle = 'rgba(200, 125, 83, 0.35)';
@@ -461,24 +845,258 @@
         }
 
         /* -------------------------------------------------------------
-           CONTROLLER
+           ENGINE 6: VECTOR FIELD
         ------------------------------------------------------------- */
-        const engines = [
-            TopologyRevealer,
-            PhaseSpaceAttractor,
-            FeigenbaumExplorer
-        ];
+        class VectorField {
+            constructor() {
+                this.name = "ENGINE // VECTOR_FIELD";
+                this.numParticles = 2200;
+                this.particles = [];
+                this.time = 0;
+                this.init();
+            }
 
-        const SelectedEngineClass = engines[Math.floor(Math.random() * engines.length)];
-        const activeEngine = new SelectedEngineClass();
+            init() {
+                this.particles = [];
+                for (let i = 0; i < this.numParticles; i++) {
+                    this.particles.push({
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        vx: 0,
+                        vy: 0,
+                        speed: 0.8 + Math.random() * 0.8,
+                        life: Math.random() * 200,
+                        maxLife: 120 + Math.random() * 180,
+                        color: Math.random() > 0.35 ? '#C87D53' : '#8A827A'
+                    });
+                }
+            }
 
-        // Initialize mouse state depending on selected engine
-        if (activeEngine instanceof FeigenbaumExplorer) {
-            mouse.x = mouse.targetX = mouse.lastX = width * 0.1;
-            mouse.y = mouse.targetY = mouse.lastY = height / 2;
+            onResize() {
+                this.init();
+            }
+
+            getAngle(x, y) {
+                const scale = 0.0025;
+                const angle = Math.sin(x * scale + this.time) + Math.cos(y * scale - this.time) + Math.sin((x + y) * 0.0015);
+                return angle * Math.PI * 2;
+            }
+
+            render() {
+                ctx.fillStyle = 'rgba(17, 17, 17, 0.15)';
+                ctx.fillRect(0, 0, width, height);
+
+                this.time += 0.003;
+
+                this.particles.forEach(p => {
+                    p.life++;
+                    if (p.life > p.maxLife || p.x < 0 || p.x > width || p.y < 0 || p.y > height) {
+                        p.x = Math.random() * width;
+                        p.y = Math.random() * height;
+                        p.life = 0;
+                    }
+
+                    let angle = this.getAngle(p.x, p.y);
+
+                    const dx = mouse.x - p.x;
+                    const dy = mouse.y - p.y;
+                    const distSq = dx * dx + dy * dy;
+                    if (distSq < 90000) {
+                        const dist = Math.sqrt(distSq);
+                        const influence = (1 - dist / 300);
+                        angle += Math.atan2(dy, dx) + Math.PI * 0.5 * influence;
+                    }
+
+                    p.vx += Math.cos(angle) * p.speed * 0.12;
+                    p.vy += Math.sin(angle) * p.speed * 0.12;
+
+                    p.vx *= 0.92;
+                    p.vy *= 0.92;
+
+                    const prevX = p.x;
+                    const prevY = p.y;
+
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    const lifeRatio = Math.sin((p.life / p.maxLife) * Math.PI);
+                    ctx.beginPath();
+                    ctx.moveTo(prevX, prevY);
+                    ctx.lineTo(p.x, p.y);
+                    ctx.strokeStyle = p.color;
+                    ctx.globalAlpha = lifeRatio * 0.45;
+                    ctx.lineWidth = 1.1;
+                    ctx.stroke();
+                    ctx.globalAlpha = 1.0;
+                });
+            }
         }
 
-        document.getElementById('engine-display').textContent = activeEngine.name;
+        /* -------------------------------------------------------------
+           ENGINE 7: OPTIMAL TRANSPORT
+        ------------------------------------------------------------- */
+        class OptimalTransport {
+            constructor() {
+                this.name = "ENGINE // OPTIMAL_TRANSPORT";
+                this.nodes = [];
+                this.numNodes = 28;
+                this.init();
+            }
+
+            init() {
+                this.nodes = [];
+                for (let i = 0; i < this.numNodes; i++) {
+                    this.nodes.push({
+                        x: width * 0.15 + Math.random() * width * 0.7,
+                        y: height * 0.15 + Math.random() * height * 0.7,
+                        vx: (Math.random() - 0.5) * 0.4,
+                        vy: (Math.random() - 0.5) * 0.4,
+                        targetRadius: 40 + Math.random() * 50
+                    });
+                }
+            }
+
+            onResize() {
+                this.init();
+            }
+
+            render() {
+                ctx.fillStyle = '#111111';
+                ctx.fillRect(0, 0, width, height);
+
+                this.nodes.forEach(n => {
+                    n.x += n.vx;
+                    n.y += n.vy;
+
+                    if (n.x < width * 0.08 || n.x > width * 0.92) n.vx *= -1;
+                    if (n.y < height * 0.08 || n.y > height * 0.92) n.vy *= -1;
+
+                    const dx = n.x - mouse.x;
+                    const dy = n.y - mouse.y;
+                    const distSq = dx * dx + dy * dy;
+                    if (distSq < 70000 && distSq > 0) {
+                        const dist = Math.sqrt(distSq);
+                        const force = (1 - dist / 265) * 1.8;
+                        n.x += (dx / dist) * force;
+                        n.y += (dy / dist) * force;
+                    }
+                });
+
+                for (let i = 0; i < this.nodes.length; i++) {
+                    for (let j = i + 1; j < this.nodes.length; j++) {
+                        const n1 = this.nodes[i];
+                        const n2 = this.nodes[j];
+                        const dx = n2.x - n1.x;
+                        const dy = n2.y - n1.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+
+                        if (dist < 260) {
+                            const alpha = (1 - dist / 260);
+                            ctx.beginPath();
+                            ctx.moveTo(n1.x, n1.y);
+                            ctx.lineTo(n2.x, n2.y);
+                            ctx.strokeStyle = `rgba(138, 130, 122, ${alpha * 0.25})`;
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+
+                            const midX = (n1.x + n2.x) / 2;
+                            const midY = (n1.y + n2.y) / 2;
+                            const perpX = -dy / dist * 18 * alpha;
+                            const perpY = dx / dist * 18 * alpha;
+
+                            ctx.beginPath();
+                            ctx.moveTo(midX - perpX, midY - perpY);
+                            ctx.lineTo(midX + perpX, midY + perpY);
+                            ctx.strokeStyle = `rgba(200, 125, 83, ${alpha * 0.55})`;
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                this.nodes.forEach(n => {
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = '#E2DDD5';
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, 8, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(200, 125, 83, 0.15)';
+                    ctx.fill();
+                });
+            }
+        }
+
+        /* -------------------------------------------------------------
+           CONTROLLER & INITIALIZATION
+        ------------------------------------------------------------- */
+        window.addEventListener('resize', resize);
+        resize();
+
+        const ALL_ENGINES = [
+            PhaseSpaceAttractor,
+            TopologyRevealer,
+            MonteCarloSim,
+            ThreeBodySystem,
+            FeigenbaumExplorer,
+            VectorField,
+            OptimalTransport
+        ];
+
+        const INITIAL_ENGINES = [PhaseSpaceAttractor, TopologyRevealer, ThreeBodySystem];
+        const InitialClass = INITIAL_ENGINES[Math.floor(Math.random() * INITIAL_ENGINES.length)];
+        
+        currentEngineIndex = ALL_ENGINES.indexOf(InitialClass);
+        activeEngine = new InitialClass();
+
+        const engineDisplay = document.getElementById('engine-display');
+        engineDisplay.textContent = activeEngine.name;
+
+        function triggerEngineSwitch() {
+            currentEngineIndex = (currentEngineIndex + 1) % ALL_ENGINES.length;
+            const NextEngineClass = ALL_ENGINES[currentEngineIndex];
+            
+            activeEngine = new NextEngineClass();
+            
+            mouse.x = mouse.targetX;
+            mouse.y = mouse.targetY;
+            mouse.lastX = mouse.targetX;
+            mouse.lastY = mouse.targetY;
+
+            if (activeEngine instanceof PhaseSpaceAttractor) {
+                mouse.x = mouse.targetX = mouse.lastX = width;
+                mouse.y = mouse.targetY = mouse.lastY = height / 2;
+                activeEngine.a = activeEngine.targetA = -1.0;
+                activeEngine.b = activeEngine.targetB = 1.6;
+            } else if (activeEngine instanceof FeigenbaumExplorer) {
+                mouse.x = mouse.targetX = mouse.lastX = width * 0.1;
+                mouse.y = mouse.targetY = mouse.lastY = height / 2;
+            }
+            
+            if (typeof activeEngine.onResize === 'function') {
+                activeEngine.onResize(width, height, width, height);
+            }
+
+            engineDisplay.textContent = activeEngine.name;
+        }
+
+        engineDisplay.addEventListener('mouseenter', triggerEngineSwitch);
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.targetX = e.clientX;
+            mouse.targetY = e.clientY;
+        });
+
+        function updateMouse() {
+            mouse.vx = (mouse.targetX - mouse.lastX);
+            mouse.vy = (mouse.targetY - mouse.lastY);
+            mouse.lastX = mouse.targetX;
+            mouse.lastY = mouse.targetY;
+
+            mouse.x += (mouse.targetX - mouse.x) * 0.08;
+            mouse.y += (mouse.targetY - mouse.y) * 0.08;
+        }
 
         function loop() {
             updateMouse();
