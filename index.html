@@ -338,7 +338,12 @@
             }
 
             render() {
-                ctx.fillStyle = 'rgba(17, 17, 17, 0.25)';
+                // Dynamically adjust trail fade and particle opacity based on screen width
+                const isNarrow = width <= 768;
+                const clearAlpha = isNarrow ? 0.35 : 0.25;
+                const pointOpacity = isNarrow ? 0.07 : 0.18;
+
+                ctx.fillStyle = `rgba(17, 17, 17, ${clearAlpha})`;
                 ctx.fillRect(0, 0, width, height);
 
                 this.targetA = -1.4 + (mouse.x / width - 0.5) * 0.8;
@@ -354,7 +359,7 @@
                 const cx = width * 0.5;
                 const cy = height * 0.5;
 
-                ctx.fillStyle = 'rgba(200, 125, 83, 0.18)';
+                ctx.fillStyle = `rgba(200, 125, 83, ${pointOpacity})`;
 
                 for (let i = 0; i < this.points; i++) {
                     let nx = Math.sin(this.a * y) + this.c * Math.cos(this.a * x);
