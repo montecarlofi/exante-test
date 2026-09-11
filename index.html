@@ -51,7 +51,14 @@
             padding: 60px 80px;
         }
 
-        .header h1 {
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header span {
             font-size: 1.5rem;
             font-weight: 300;
             letter-spacing: 0.35em;
@@ -60,7 +67,7 @@
         }
 
         .hero-text {
-            max-width: 520px;
+            max-width: 560px;
         }
 
         .hero-text p.tagline {
@@ -80,6 +87,7 @@
         }
 
         .footer {
+            width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
@@ -88,19 +96,22 @@
             text-transform: uppercase;
         }
 
-        #engine-id {
+        .engine-display {
             color: #383430;
         }
 
+        /* Hover Glow Effect */
         .footer-text {
-            color: #8A827A;
+            color: #5C554E;
             pointer-events: auto;
             cursor: default;
-            transition: color 0.3s ease;
+            transition: color 0.3s ease, text-shadow 0.3s ease;
+            display: inline-block;
         }
 
         .footer-text:hover {
-            color: #C87D53;
+            color: #8A827A;
+            text-shadow: 0 0 10px rgba(138, 130, 122, 0.5);
         }
 
         @media (max-width: 768px) {
@@ -117,7 +128,8 @@
 
     <div class="content">
         <div class="header">
-            <h1>EX ANTE</h1>
+            <span>EX</span>
+            <span>ANTE</span>
         </div>
 
         <div class="hero-text">
@@ -128,7 +140,7 @@
         </div>
 
         <div class="footer">
-            <div id="engine-id">ENGINE // INITIALIZING</div>
+            <div id="engine-display" class="engine-display"></div>
             <div class="footer-text">By referral or private agreement only.</div>
         </div>
     </div>
@@ -136,7 +148,6 @@
     <script>
         const canvas = document.getElementById('stage');
         const ctx = canvas.getContext('2d');
-        const engineLabel = document.getElementById('engine-id');
 
         let width, height;
         let mouse = { x: -1000, y: -1000, targetX: -1000, targetY: -1000, vx: 0, vy: 0, lastX: 0, lastY: 0 };
@@ -168,7 +179,7 @@
         ------------------------------------------------------------- */
         class TopologyRevealer {
             constructor() {
-                this.name = "SYS // TOPOLOGY_REVEALER";
+                this.name = "ENGINE // 01 : TOPOLOGY REVEALER";
                 this.nodes = [];
                 this.numBase = 70;
                 this.numLatent = 200;
@@ -279,7 +290,7 @@
         ------------------------------------------------------------- */
         class PhaseSpaceAttractor {
             constructor() {
-                this.name = "SYS // PHASE_SPACE_ATTRACTOR";
+                this.name = "ENGINE // 02 : PHASE SPACE ATTRACTOR";
                 this.a = -1.4;
                 this.b = 1.6;
                 this.c = 1.0;
@@ -325,88 +336,85 @@
         }
 
         /* -------------------------------------------------------------
-           ENGINE 3: THE STOCHASTIC ENGINE
+           ENGINE 3: DYNAMIC BIFURCATION TREE
         ------------------------------------------------------------- */
-        class StochasticEngine {
+        class BifurcationTree {
             constructor() {
-                this.name = "SYS // STOCHASTIC_SIMULATOR";
-                this.numPaths = 140;
-                this.steps = 180;
+                this.name = "ENGINE // 03 : DYNAMIC BIFURCATION";
+                this.warmup = 100;
+                this.iterations = 70;
             }
 
             render() {
                 ctx.fillStyle = '#111111';
                 ctx.fillRect(0, 0, width, height);
 
-                const startX = width * 0.08;
-                const startY = height * 0.5;
-                const stepWidth = (width * 0.84) / this.steps;
+                const marginX = width * 0.08;
+                const marginY = height * 0.18;
+                const plotWidth = width - marginX * 2;
+                const plotHeight = height - marginY * 2;
 
-                const mu = (mouse.y - height / 2) * -0.0016;
-                const sigma = Math.max(0.01, (mouse.x / width) * 0.07);
+                // Dynamic parameters based on mouse position
+                const rStart = 2.7 + (mouse.x / width) * 0.5; // Zoom/Pan parameter space
+                const rEnd = 4.0;
+                const nonLinearShift = 1.0 + ((height / 2 - mouse.y) / height) * 0.15;
 
-                let endpoints = [];
-                let allPaths = [];
+                const slices = Math.floor(plotWidth / 2.5);
 
-                let seed = 42;
-                function random() {
-                    let x = Math.sin(seed++) * 10000;
-                    return x - Math.floor(x);
-                }
+                // Render bifurcation plot slices
+                for (let s = 0; s < slices; s++) {
+                    const stepFrac = s / slices;
+                    const r = rStart + stepFrac * (rEnd - rStart);
+                    const px = marginX + stepFrac * plotWidth;
 
-                function gaussian() {
-                    let u = 0, v = 0;
-                    while(u === 0) u = random();
-                    while(v === 0) v = random();
-                    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-                }
+                    let x = 0.5;
 
-                for (let p = 0; p < this.numPaths; p++) {
-                    let path = [{ x: startX, y: startY }];
-                    let currentY = startY;
-
-                    for (let s = 0; s < this.steps; s++) {
-                        let dw = gaussian();
-                        let dy = (mu * 20) + (sigma * dw * 80);
-                        currentY -= dy; 
-                        path.push({
-                            x: startX + (s + 1) * stepWidth,
-                            y: currentY
-                        });
+                    // Warmup iterations to discard transient states
+                    for (let i = 0; i < this.warmup; i++) {
+                        x = r * Math.pow(x, nonLinearShift) * (1 - x);
+                        if (x < 0) x = 0;
+                        if (x > 1) x = 1;
                     }
-                    allPaths.push(path);
-                    endpoints.push(currentY);
-                }
 
-                ctx.lineWidth = 1;
-                for (let p = 0; p < allPaths.length; p++) {
-                    ctx.beginPath();
-                    ctx.moveTo(allPaths[p][0].x, allPaths[p][0].y);
-                    for (let s = 1; s < allPaths[p].length; s++) {
-                        ctx.lineTo(allPaths[p][s].x, allPaths[p][s].y);
+                    const distToMouse = Math.abs(px - mouse.x);
+                    const isHighlighted = distToMouse < 70;
+
+                    // Draw steady-state attractor values for parameter r
+                    for (let i = 0; i < this.iterations; i++) {
+                        x = r * Math.pow(x, nonLinearShift) * (1 - x);
+                        if (x < 0) x = 0;
+                        if (x > 1) x = 1;
+
+                        const py = marginY + (1 - x) * plotHeight;
+
+                        if (isHighlighted) {
+                            const intensity = 1 - (distToMouse / 70);
+                            ctx.fillStyle = `rgba(200, 125, 83, ${0.4 + intensity * 0.5})`;
+                        } else {
+                            ctx.fillStyle = 'rgba(138, 130, 122, 0.18)';
+                        }
+
+                        ctx.fillRect(px, py, 1.3, 1.3);
                     }
-                    ctx.strokeStyle = 'rgba(138, 130, 122, 0.09)';
-                    ctx.stroke();
                 }
 
-                endpoints.sort((a, b) => a - b);
-                const p10Index = Math.floor(this.numPaths * 0.1);
-                const p90Index = Math.floor(this.numPaths * 0.9);
-
-                for (let p = p10Index; p <= p90Index; p += 4) {
-                    ctx.beginPath();
-                    ctx.moveTo(allPaths[p][0].x, allPaths[p][0].y);
-                    for (let s = 1; s < allPaths[p].length; s++) {
-                        ctx.lineTo(allPaths[p][s].x, allPaths[p][s].y);
-                    }
-                    ctx.strokeStyle = 'rgba(200, 125, 83, 0.38)';
-                    ctx.stroke();
-                }
-
+                // Axis baseline
+                ctx.strokeStyle = 'rgba(138, 130, 122, 0.12)';
                 ctx.beginPath();
-                ctx.arc(startX, startY, 5, 0, Math.PI * 2);
-                ctx.fillStyle = '#C87D53';
-                ctx.fill();
+                ctx.moveTo(marginX, marginY + plotHeight);
+                ctx.lineTo(marginX + plotWidth, marginY + plotHeight);
+                ctx.stroke();
+
+                // Interactive vertical inspection line
+                if (mouse.x > marginX && mouse.x < marginX + plotWidth) {
+                    ctx.strokeStyle = 'rgba(200, 125, 83, 0.35)';
+                    ctx.setLineDash([3, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(mouse.x, marginY);
+                    ctx.lineTo(mouse.x, marginY + plotHeight);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
             }
         }
 
@@ -416,13 +424,13 @@
         const engines = [
             TopologyRevealer,
             PhaseSpaceAttractor,
-            StochasticEngine
+            BifurcationTree
         ];
 
         const SelectedEngineClass = engines[Math.floor(Math.random() * engines.length)];
         const activeEngine = new SelectedEngineClass();
 
-        engineLabel.innerText = activeEngine.name;
+        document.getElementById('engine-display').textContent = activeEngine.name;
 
         function loop() {
             updateMouse();
