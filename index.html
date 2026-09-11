@@ -54,7 +54,7 @@
         .header {
             width: 100%;
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
             align-items: center;
         }
 
@@ -67,7 +67,7 @@
         }
 
         .hero-text {
-            max-width: 560px;
+            max-width: 620px;
         }
 
         .hero-text p.tagline {
@@ -79,11 +79,15 @@
         }
 
         .hero-text p.subtext {
-            font-size: 0.85rem;
+            font-size: 0.88rem;
             font-weight: 300;
-            line-height: 1.6;
-            color: #8A827A;
+            line-height: 1.65;
+            color: #A39C93;
             letter-spacing: 0.02em;
+        }
+
+        .hero-text p.subtext + p.subtext {
+            margin-top: 14px;
         }
 
         .footer {
@@ -97,7 +101,7 @@
         }
 
         .engine-display {
-            color: #383430;
+            color: #5C554E;
         }
 
         /* Hover Glow Effect */
@@ -117,6 +121,7 @@
         @media (max-width: 768px) {
             .content { padding: 30px; }
             .hero-text p.tagline { font-size: 1.05rem; }
+            .hero-text p.subtext { font-size: 0.80rem; }
         }
     </style>
 </head>
@@ -128,14 +133,19 @@
 
     <div class="content">
         <div class="header">
-            <span>EX</span>
-            <span>ANTE</span>
+            <span>EX ANTE</span>
         </div>
 
         <div class="hero-text">
             <p class="tagline">The profit is already in the system.</p>
             <p class="subtext">
-                Unlocking hidden organizational yield through stochastic multi-variable modeling and continuous ex-ante simulation.
+                We model the machine. Unused yield becomes visible. Forecasting in ways you have never seen. Volume, complexity, uncertainty? Finance, oil & gas, investment strategy, production, logistics, construction — any system can have hidden yields.
+            </p>
+            <p class="subtext">
+                No spend.
+            </p>
+            <p class="subtext">
+                Toss a coin, win but not lose: We take a profit when you take a profit.
             </p>
         </div>
 
@@ -150,7 +160,19 @@
         const ctx = canvas.getContext('2d');
 
         let width, height;
-        let mouse = { x: -1000, y: -1000, targetX: -1000, targetY: -1000, vx: 0, vy: 0, lastX: 0, lastY: 0 };
+        let isUserActive = false;
+        let idleTimer = null;
+        
+        let mouse = { 
+            x: -1000, 
+            y: -1000, 
+            targetX: -1000, 
+            targetY: -1000, 
+            vx: 0, 
+            vy: 0, 
+            lastX: -1000, 
+            lastY: -1000 
+        };
 
         function resize() {
             width = canvas.width = window.innerWidth;
@@ -160,26 +182,40 @@
         resize();
 
         window.addEventListener('mousemove', (e) => {
+            isUserActive = true;
             mouse.targetX = e.clientX;
             mouse.targetY = e.clientY;
+
+            clearTimeout(idleTimer);
+            // Return to autonomous scanning for Feigenbaum Explorer after mouse stops
+            idleTimer = setTimeout(() => {
+                isUserActive = false;
+            }, 2500);
         });
 
         function updateMouse() {
+            // Apply autonomous simulated motion ONLY if active engine is Feigenbaum Explorer
+            if (activeEngine instanceof FeigenbaumExplorer && !isUserActive) {
+                const time = Date.now() * 0.0006;
+                mouse.targetX = (Math.sin(time) * 0.42 + 0.5) * width;
+                mouse.targetY = (Math.cos(time * 0.7) * 0.25 + 0.5) * height;
+            }
+
             mouse.vx = (mouse.targetX - mouse.lastX);
             mouse.vy = (mouse.targetY - mouse.lastY);
             mouse.lastX = mouse.targetX;
             mouse.lastY = mouse.targetY;
 
-            mouse.x += (mouse.targetX - mouse.x) * 0.1;
-            mouse.y += (mouse.targetY - mouse.y) * 0.1;
+            mouse.x += (mouse.targetX - mouse.x) * 0.08;
+            mouse.y += (mouse.targetY - mouse.y) * 0.08;
         }
 
         /* -------------------------------------------------------------
-           ENGINE 1: THE TOPOLOGY REVEALER
+           ENGINE 1: TOPOLOGY REVEALER
         ------------------------------------------------------------- */
         class TopologyRevealer {
             constructor() {
-                this.name = "ENGINE // 01 : TOPOLOGY REVEALER";
+                this.name = "ENGINE // TOPOLOGY_REVEALER";
                 this.nodes = [];
                 this.numBase = 70;
                 this.numLatent = 200;
@@ -286,11 +322,11 @@
         }
 
         /* -------------------------------------------------------------
-           ENGINE 2: THE PHASE SPACE ATTRACTOR
+           ENGINE 2: PHASE SPACE ATTRACTOR
         ------------------------------------------------------------- */
         class PhaseSpaceAttractor {
             constructor() {
-                this.name = "ENGINE // 02 : PHASE SPACE ATTRACTOR";
+                this.name = "ENGINE // PHASE_SPACE_ATTRACTOR";
                 this.a = -1.4;
                 this.b = 1.6;
                 this.c = 1.0;
@@ -336,13 +372,13 @@
         }
 
         /* -------------------------------------------------------------
-           ENGINE 3: DYNAMIC BIFURCATION TREE
+           ENGINE 3: FEIGENBAUM EXPLORER
         ------------------------------------------------------------- */
-        class BifurcationTree {
+        class FeigenbaumExplorer {
             constructor() {
-                this.name = "ENGINE // 03 : DYNAMIC BIFURCATION";
+                this.name = "ENGINE // FEIGENBAUM_EXPLORER";
                 this.warmup = 100;
-                this.iterations = 70;
+                this.iterations = 75;
             }
 
             render() {
@@ -350,26 +386,27 @@
                 ctx.fillRect(0, 0, width, height);
 
                 const marginX = width * 0.08;
-                const marginY = height * 0.18;
+                // Positioned below text baseline
+                const marginTop = Math.max(height * 0.45, 340) + 50; 
+                const marginBottom = height * 0.10;
                 const plotWidth = width - marginX * 2;
-                const plotHeight = height - marginY * 2;
+                const plotHeight = height - marginTop - marginBottom;
 
-                // Dynamic parameters based on mouse position
-                const rStart = 2.7 + (mouse.x / width) * 0.5; // Zoom/Pan parameter space
+                const rStart = 2.7 + (mouse.x / width) * 0.4;
                 const rEnd = 4.0;
                 const nonLinearShift = 1.0 + ((height / 2 - mouse.y) / height) * 0.15;
 
-                const slices = Math.floor(plotWidth / 2.5);
+                const slices = Math.floor(plotWidth / 2.2);
+                const diagonalAscent = 70; // Diagonal upward slant towards the right
 
-                // Render bifurcation plot slices
                 for (let s = 0; s < slices; s++) {
                     const stepFrac = s / slices;
                     const r = rStart + stepFrac * (rEnd - rStart);
                     const px = marginX + stepFrac * plotWidth;
+                    const diagonalOffset = stepFrac * diagonalAscent;
 
                     let x = 0.5;
 
-                    // Warmup iterations to discard transient states
                     for (let i = 0; i < this.warmup; i++) {
                         x = r * Math.pow(x, nonLinearShift) * (1 - x);
                         if (x < 0) x = 0;
@@ -377,19 +414,18 @@
                     }
 
                     const distToMouse = Math.abs(px - mouse.x);
-                    const isHighlighted = distToMouse < 70;
+                    const isHighlighted = distToMouse < 80;
 
-                    // Draw steady-state attractor values for parameter r
                     for (let i = 0; i < this.iterations; i++) {
                         x = r * Math.pow(x, nonLinearShift) * (1 - x);
                         if (x < 0) x = 0;
                         if (x > 1) x = 1;
 
-                        const py = marginY + (1 - x) * plotHeight;
+                        const py = marginTop + (1 - x) * plotHeight - diagonalOffset;
 
                         if (isHighlighted) {
-                            const intensity = 1 - (distToMouse / 70);
-                            ctx.fillStyle = `rgba(200, 125, 83, ${0.4 + intensity * 0.5})`;
+                            const intensity = 1 - (distToMouse / 80);
+                            ctx.fillStyle = `rgba(200, 125, 83, ${0.45 + intensity * 0.5})`;
                         } else {
                             ctx.fillStyle = 'rgba(138, 130, 122, 0.18)';
                         }
@@ -398,20 +434,21 @@
                     }
                 }
 
-                // Axis baseline
+                // Diagonally sloped axis baseline
                 ctx.strokeStyle = 'rgba(138, 130, 122, 0.12)';
                 ctx.beginPath();
-                ctx.moveTo(marginX, marginY + plotHeight);
-                ctx.lineTo(marginX + plotWidth, marginY + plotHeight);
+                ctx.moveTo(marginX, marginTop + plotHeight);
+                ctx.lineTo(marginX + plotWidth, marginTop + plotHeight - diagonalAscent);
                 ctx.stroke();
 
                 // Interactive vertical inspection line
                 if (mouse.x > marginX && mouse.x < marginX + plotWidth) {
+                    const currentOffset = ((mouse.x - marginX) / plotWidth) * diagonalAscent;
                     ctx.strokeStyle = 'rgba(200, 125, 83, 0.35)';
                     ctx.setLineDash([3, 4]);
                     ctx.beginPath();
-                    ctx.moveTo(mouse.x, marginY);
-                    ctx.lineTo(mouse.x, marginY + plotHeight);
+                    ctx.moveTo(mouse.x, marginTop - currentOffset);
+                    ctx.lineTo(mouse.x, marginTop + plotHeight - currentOffset);
                     ctx.stroke();
                     ctx.setLineDash([]);
                 }
@@ -424,11 +461,17 @@
         const engines = [
             TopologyRevealer,
             PhaseSpaceAttractor,
-            BifurcationTree
+            FeigenbaumExplorer
         ];
 
         const SelectedEngineClass = engines[Math.floor(Math.random() * engines.length)];
         const activeEngine = new SelectedEngineClass();
+
+        // Initialize mouse state depending on selected engine
+        if (activeEngine instanceof FeigenbaumExplorer) {
+            mouse.x = mouse.targetX = mouse.lastX = width * 0.1;
+            mouse.y = mouse.targetY = mouse.lastY = height / 2;
+        }
 
         document.getElementById('engine-display').textContent = activeEngine.name;
 
